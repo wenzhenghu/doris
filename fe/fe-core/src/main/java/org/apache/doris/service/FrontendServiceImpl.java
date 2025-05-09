@@ -89,6 +89,7 @@ import org.apache.doris.load.routineload.RoutineLoadManager;
 import org.apache.doris.master.MasterImpl;
 import org.apache.doris.mysql.privilege.AccessControllerManager;
 import org.apache.doris.mysql.privilege.PrivPredicate;
+import org.apache.doris.nereids.trees.plans.PlanNodeAndHash;
 import org.apache.doris.persist.gson.GsonUtils;
 import org.apache.doris.planner.OlapTableSink;
 import org.apache.doris.plsql.metastore.PlsqlPackage;
@@ -115,6 +116,7 @@ import org.apache.doris.statistics.InvalidateStatsTarget;
 import org.apache.doris.statistics.StatisticsCacheKey;
 import org.apache.doris.statistics.TableStatsMeta;
 import org.apache.doris.statistics.UpdatePartitionStatsTarget;
+import org.apache.doris.statistics.hbo.RecentRunsPlanStatistics;
 import org.apache.doris.statistics.query.QueryStats;
 import org.apache.doris.statistics.util.StatisticsUtil;
 import org.apache.doris.system.Backend;
@@ -260,6 +262,7 @@ import org.apache.doris.thrift.TUniqueId;
 import org.apache.doris.thrift.TUpdateExportTaskStatusRequest;
 import org.apache.doris.thrift.TUpdateFollowerPartitionStatsCacheRequest;
 import org.apache.doris.thrift.TUpdateFollowerStatsCacheRequest;
+import org.apache.doris.thrift.TUpdatePlanStatsCacheRequest;
 import org.apache.doris.thrift.TWaitingTxnStatusRequest;
 import org.apache.doris.thrift.TWaitingTxnStatusResult;
 import org.apache.doris.transaction.SubTransactionState;
@@ -2031,8 +2034,7 @@ public class FrontendServiceImpl implements FrontendService.Iface {
             boolean hasUserName = !StringUtils.isEmpty(request.getUser());
             if (Config.enable_workload_group && hasUserName) {
                 tWorkloadGroupList = Env.getCurrentEnv().getWorkloadGroupMgr()
-                        .getWorkloadGroupByUser(ConnectContext.get()
-                                .getCurrentUserIdentity(), true);
+                        .getWorkloadGroup(ConnectContext.get());
             }
             if (!Strings.isNullOrEmpty(request.getLoadSql())) {
                 httpStreamPutImpl(request, result);
@@ -3502,6 +3504,15 @@ public class FrontendServiceImpl implements FrontendService.Iface {
     }
 
     @Override
+    public TStatus updatePlanStatsCache(TUpdatePlanStatsCacheRequest request) throws TException {
+        PlanNodeAndHash key = GsonUtils.GSON.fromJson(request.key, PlanNodeAndHash.class);
+        RecentRunsPlanStatistics data = GsonUtils.GSON.fromJson(request.planStatsData, RecentRunsPlanStatistics.class);
+        Env.getCurrentEnv().getHboPlanStatisticsManager().getHboPlanStatisticsProvider()
+                .updatePlanStats(key, data);
+        return new TStatus(TStatusCode.OK);
+    }
+
+    @Override
     public TStatus invalidateStatsCache(TInvalidateFollowerStatsCacheRequest request) throws TException {
         InvalidateStatsTarget target = GsonUtils.GSON.fromJson(request.key, InvalidateStatsTarget.class);
         AnalysisManager analysisManager = Env.getCurrentEnv().getAnalysisManager();
@@ -3777,7 +3788,9 @@ public class FrontendServiceImpl implements FrontendService.Iface {
             needReplace = overwriteManager.tryReplacePartitionIds(taskGroupId, reqPartitionIds, resultPartitionIds);
             // request: [1 2 3 4] result: [1 2 5 6] means ONLY 1 and 2 need replace.
             if (needReplace) {
-                // names for [1 2]
+                // names for [1 2]. if another txn dropped origin partitions, we will fail here. return the exception.
+                // that's reasonable because we want iot-auto-detect txn has as less impact as possible. so only when we
+                // detected the conflict in this RPC, we will fail the txn. it allows more concurrent transactions.
                 List<String> pendingPartitionNames = olapTable.getEqualPartitionNames(reqPartitionIds,
                                 resultPartitionIds);
                 for (String name : pendingPartitionNames) {
@@ -3805,7 +3818,7 @@ public class FrontendServiceImpl implements FrontendService.Iface {
                     }
                 }
             }
-        } catch (DdlException ex) {
+        } catch (DdlException | RuntimeException ex) {
             errorStatus.setErrorMsgs(Lists.newArrayList(ex.getMessage()));
             result.setStatus(errorStatus);
             LOG.warn("send create partition error status: {}", result);
