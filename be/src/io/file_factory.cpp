@@ -22,6 +22,7 @@
 #include <gen_cpp/Types_types.h>
 
 #include <mutex>
+#include <set>
 #include <utility>
 
 #include "common/cast_set.h"
@@ -69,8 +70,33 @@ io::FileReaderOptions FileFactory::get_reader_options(RuntimeState* state,
     if (state != nullptr) {
         const DescriptorTbl& desc_tbl = state->desc_tbl();
         
-        // Log tuple descriptors using public method
+        // Log table descriptors using get_table_descriptor method
         std::vector<TupleDescriptor*> tuple_descs = desc_tbl.get_tuple_descs();
+        std::set<TableId> table_ids;
+        
+        // Collect all table IDs from tuple descriptors
+        for (const auto& tuple_desc : tuple_descs) {
+            if (tuple_desc->table_desc() != nullptr) {
+                table_ids.insert(tuple_desc->table_desc()->table_id());
+            }
+        }
+        
+        // Log table descriptors information
+        if (!table_ids.empty()) {
+            LOG(INFO) << "FileFactory::get_reader_options - state->_desc_tbl table_descs size: " 
+                      << table_ids.size();
+            for (const auto& table_id : table_ids) {
+                TableDescriptor* table_desc = desc_tbl.get_table_descriptor(table_id);
+                if (table_desc != nullptr) {
+                    LOG(INFO) << "FileFactory::get_reader_options - table_desc id: " << table_desc->table_id()
+                              << ", name: " << table_desc->name()
+                              << ", database: " << table_desc->database()
+                              << ", num_cols: " << table_desc->num_cols();
+                }
+            }
+        }
+        
+        // Log tuple descriptors using public method
         if (!tuple_descs.empty()) {
             LOG(INFO) << "FileFactory::get_reader_options - state->_desc_tbl tuple_descs size: " 
                       << tuple_descs.size();
