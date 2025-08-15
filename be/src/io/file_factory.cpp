@@ -45,6 +45,7 @@
 #include "io/hdfs_util.h"
 #include "runtime/exec_env.h"
 #include "runtime/runtime_state.h"
+#include "runtime/descriptors.h"
 #include "runtime/stream_load/new_load_stream_mgr.h"
 #include "runtime/stream_load/stream_load_context.h"
 #include "util/s3_uri.h"
@@ -58,6 +59,41 @@ constexpr std::string_view RANDOM_CACHE_BASE_PATH = "random";
 
 io::FileReaderOptions FileFactory::get_reader_options(RuntimeState* state,
                                                       const io::FileDescription& fd) {
+    // Log fd parameter fields
+    LOG(INFO) << "FileFactory::get_reader_options - fd.path: " << fd.path
+              << ", fd.file_size: " << fd.file_size
+              << ", fd.mtime: " << fd.mtime
+              << ", fd.fs_name: " << fd.fs_name;
+    
+    // Log state->_desc_tbl fields if state is not null
+    if (state != nullptr) {
+        const DescriptorTbl& desc_tbl = state->desc_tbl();
+        
+        // Log tuple descriptors using public method
+        std::vector<TupleDescriptor*> tuple_descs = desc_tbl.get_tuple_descs();
+        if (!tuple_descs.empty()) {
+            LOG(INFO) << "FileFactory::get_reader_options - state->_desc_tbl tuple_descs size: " 
+                      << tuple_descs.size();
+            for (const auto& tuple_desc : tuple_descs) {
+                LOG(INFO) << "FileFactory::get_reader_options - tuple_desc id: " << tuple_desc->id()
+                          << ", num_slots: " << tuple_desc->slots().size();
+                
+                // Log slot descriptors for each tuple
+                const std::vector<SlotDescriptor*>& slots = tuple_desc->slots();
+                for (const auto& slot : slots) {
+                    LOG(INFO) << "FileFactory::get_reader_options - slot_desc id: " << slot->id()
+                              << ", col_name: " << slot->col_name()
+                              << ", col_pos: " << slot->col_pos()
+                              << ", parent_tuple: " << slot->parent();
+                }
+            }
+        }
+        
+        // Log debug string which contains comprehensive information
+        LOG(INFO) << "FileFactory::get_reader_options - DescriptorTbl debug_string: " 
+                  << desc_tbl.debug_string();
+    }
+    
     io::FileReaderOptions opts {
             .cache_base_path {},
             .file_size = fd.file_size,
