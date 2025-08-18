@@ -46,6 +46,7 @@
 #include "io/hdfs_util.h"
 #include "runtime/exec_env.h"
 #include "runtime/runtime_state.h"
+#include "runtime/query_context.h"
 #include "runtime/descriptors.h"
 #include "runtime/stream_load/new_load_stream_mgr.h"
 #include "runtime/stream_load/stream_load_context.h"
@@ -60,6 +61,16 @@ constexpr std::string_view RANDOM_CACHE_BASE_PATH = "random";
 
 io::FileReaderOptions FileFactory::get_reader_options(RuntimeState* state,
                                                       const io::FileDescription& fd) {
+    // Log user and group information from RuntimeState's query context
+    if (state != nullptr && state->get_query_ctx() != nullptr) {
+        LOG(INFO) << "FileFactory::get_reader_options - user: " << state->get_query_ctx()->user
+                  << ", group: " << state->get_query_ctx()->group
+                  << ", set_rsc_info: "
+                  << (state->get_query_ctx()->set_rsc_info ? "true" : "false");
+    } else {
+        LOG(INFO) << "FileFactory::get_reader_options - state or query_ctx is null";
+    }
+    
     // Log fd parameter fields
     LOG(INFO) << "FileFactory::get_reader_options - fd.path: " << fd.path
               << ", fd.file_size: " << fd.file_size
@@ -77,7 +88,7 @@ io::FileReaderOptions FileFactory::get_reader_options(RuntimeState* state,
         // Collect all table IDs from tuple descriptors
         for (const auto& tuple_desc : tuple_descs) {
             if (tuple_desc->table_desc() != nullptr) {
-                table_ids.insert(tuple_desc->table_desc()->table_id());
+                table_ids.insert((TableId)tuple_desc->table_desc()->table_id());
             }
         }
         
@@ -91,6 +102,7 @@ io::FileReaderOptions FileFactory::get_reader_options(RuntimeState* state,
                     LOG(INFO) << "FileFactory::get_reader_options - table_desc id: " << table_desc->table_id()
                               << ", name: " << table_desc->name()
                               << ", database: " << table_desc->database()
+                              << (!table_desc->catalog().empty() ? (", catalog: " + table_desc->catalog()) : "")
                               << ", num_cols: " << table_desc->num_cols();
                 }
             }

@@ -417,6 +417,9 @@ struct TTableDescriptor {
 
   // Name of the database that the table belongs to
   8: required string dbName;
+  
+  // Name of the catalog that the table belongs to
+  9: optional string catalogName;
   10: optional TMySQLTable mysqlTable
   11: optional TOlapTable olapTable
   12: optional TSchemaTable schemaTable

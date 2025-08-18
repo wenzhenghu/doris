@@ -168,11 +168,21 @@ TableDescriptor::TableDescriptor(const TTableDescriptor& tdesc)
           _database(tdesc.dbName),
           _table_id(tdesc.id),
           _num_cols(tdesc.numCols),
-          _num_clustering_cols(tdesc.numClusteringCols) {}
+          _num_clustering_cols(tdesc.numClusteringCols) {
+    // Set catalog field if available
+    if (tdesc.__isset.catalogName) {
+        _catalog = tdesc.catalogName;
+    } else {
+        _catalog = "";
+    }
+}
 
 std::string TableDescriptor::debug_string() const {
     std::stringstream out;
     out << "#cols=" << _num_cols << " #clustering_cols=" << _num_clustering_cols;
+    if (!_catalog.empty()) {
+        out << " catalog=" << _catalog;
+    }
     return out.str();
 }
 

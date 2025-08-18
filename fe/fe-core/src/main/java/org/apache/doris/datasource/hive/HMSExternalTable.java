@@ -517,6 +517,16 @@ public class HMSExternalTable extends ExternalTable implements MTMVRelatedTableI
         THiveTable tHiveTable = new THiveTable(dbName, name, new HashMap<>());
         TTableDescriptor tTableDescriptor = new TTableDescriptor(getId(), TTableType.HIVE_TABLE, schema.size(), 0,
                 getName(), dbName);
+        
+        // Set catalog name if available
+        DatabaseIf database = getDatabase();
+        if (database != null) {
+            CatalogIf catalog = database.getCatalog();
+            if (catalog != null) {
+                tTableDescriptor.setCatalogName(catalog.getName());
+            }
+        }
+        
         tTableDescriptor.setHiveTable(tHiveTable);
         return tTableDescriptor;
     }

@@ -17,9 +17,11 @@
 
 package org.apache.doris.catalog;
 
+import org.apache.doris.catalog.external.CatalogIf;
 import org.apache.doris.common.DdlException;
 import org.apache.doris.common.security.authentication.AuthType;
 import org.apache.doris.common.security.authentication.AuthenticationConfig;
+import org.apache.doris.datasource.DatabaseIf;
 import org.apache.doris.datasource.property.constants.HMSProperties;
 import org.apache.doris.datasource.property.constants.S3Properties;
 import org.apache.doris.thrift.THiveTable;
@@ -177,6 +179,16 @@ public class HiveTable extends Table {
         THiveTable tHiveTable = new THiveTable(getHiveDb(), getHiveTable(), getHiveProperties());
         TTableDescriptor tTableDescriptor = new TTableDescriptor(getId(), TTableType.HIVE_TABLE,
                 fullSchema.size(), 0, getName(), "");
+        
+        // Set catalog name if available
+        DatabaseIf database = getDatabase();
+        if (database != null) {
+            CatalogIf catalog = database.getCatalog();
+            if (catalog != null) {
+                tTableDescriptor.setCatalogName(catalog.getName());
+            }
+        }
+        
         tTableDescriptor.setHiveTable(tHiveTable);
         return tTableDescriptor;
     }
