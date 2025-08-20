@@ -143,28 +143,30 @@ class TableDescriptor {
 public:
     TableDescriptor(const TTableDescriptor& tdesc);
     virtual ~TableDescriptor() = default;
+
     int num_cols() const { return _num_cols; }
     int num_clustering_cols() const { return _num_clustering_cols; }
-    virtual std::string debug_string() const;
-
-    // The first _num_clustering_cols columns by position are clustering
-    // columns.
-    bool is_clustering_col(const SlotDescriptor* slot_desc) const {
-        return slot_desc->col_pos() < _num_clustering_cols;
-    }
-
-    ::doris::TTableType::type table_type() const { return _table_type; }
+    TTableType::type table_type() const { return _table_type; }
     const std::string& name() const { return _name; }
     const std::string& database() const { return _database; }
     const std::string& catalog() const { return _catalog; }
-    int64_t table_id() const { return _table_id; }
+    
+    // Add user method
+    const std::string& user() const { return _user; }
+    
+    TableId table_id() const { return _table_id; }
+    virtual std::string debug_string() const;
 
-private:
-    ::doris::TTableType::type _table_type;
+protected:
+    TTableType::type _table_type;
     std::string _name;
     std::string _database;
     std::string _catalog;
-    int64_t _table_id;
+    
+    // Add user field
+    std::string _user;
+    
+    TableId _table_id;
     int _num_cols;
     int _num_clustering_cols;
 };

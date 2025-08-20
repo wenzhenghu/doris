@@ -175,6 +175,13 @@ TableDescriptor::TableDescriptor(const TTableDescriptor& tdesc)
     } else {
         _catalog = "";
     }
+    
+    // Set user field if available
+    if (tdesc.__isset.user) {
+        _user = tdesc.user;
+    } else {
+        _user = "";
+    }
 }
 
 std::string TableDescriptor::debug_string() const {

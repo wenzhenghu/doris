@@ -693,12 +693,6 @@ Status FragmentMgr::_get_or_create_query_ctx(const TPipelineFragmentParams& para
                     "cancelled. host: {}",
                     print_id(query_id), BackendOptions::get_localhost());
         }
-        // For simplified params, ensure user and group info is available from parent params
-        if (parent.__isset.resource_info && !query_ctx->set_rsc_info) {
-            query_ctx->user = parent.resource_info.user;
-            query_ctx->group = parent.resource_info.group;
-            query_ctx->set_rsc_info = true;
-        }
     } else {
         if (!query_ctx) {
             RETURN_IF_ERROR(_query_ctx_map.apply_if_not_exists(

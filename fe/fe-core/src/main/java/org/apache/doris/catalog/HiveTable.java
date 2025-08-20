@@ -17,7 +17,7 @@
 
 package org.apache.doris.catalog;
 
-import org.apache.doris.catalog.external.CatalogIf;
+import org.apache.doris.datasource.CatalogIf;
 import org.apache.doris.common.DdlException;
 import org.apache.doris.common.security.authentication.AuthType;
 import org.apache.doris.common.security.authentication.AuthenticationConfig;
@@ -187,6 +187,12 @@ public class HiveTable extends Table {
             if (catalog != null) {
                 tTableDescriptor.setCatalogName(catalog.getName());
             }
+        }
+        
+        // Set user information from current context
+        ConnectContext ctx = ConnectContext.get();
+        if (ctx != null && ctx.getCurrentUserIdentity() != null) {
+            tTableDescriptor.setUser(ctx.getCurrentUserIdentity().getQualifiedUser());
         }
         
         tTableDescriptor.setHiveTable(tHiveTable);

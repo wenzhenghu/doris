@@ -61,14 +61,11 @@ constexpr std::string_view RANDOM_CACHE_BASE_PATH = "random";
 
 io::FileReaderOptions FileFactory::get_reader_options(RuntimeState* state,
                                                       const io::FileDescription& fd) {
-    // Log user and group information from RuntimeState's query context
-    if (state != nullptr && state->get_query_ctx() != nullptr) {
-        LOG(INFO) << "FileFactory::get_reader_options - user: " << state->get_query_ctx()->user
-                  << ", group: " << state->get_query_ctx()->group
-                  << ", set_rsc_info: "
-                  << (state->get_query_ctx()->set_rsc_info ? "true" : "false");
+    // Log user information from RuntimeState
+    if (state != nullptr) {
+        LOG(INFO) << "FileFactory::get_reader_options - user: " << state->user();
     } else {
-        LOG(INFO) << "FileFactory::get_reader_options - state or query_ctx is null";
+        LOG(INFO) << "FileFactory::get_reader_options - state is null";
     }
     
     // Log fd parameter fields

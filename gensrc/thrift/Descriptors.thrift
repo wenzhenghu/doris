@@ -417,9 +417,7 @@ struct TTableDescriptor {
 
   // Name of the database that the table belongs to
   8: required string dbName;
-  
-  // Name of the catalog that the table belongs to
-  9: optional string catalogName;
+
   10: optional TMySQLTable mysqlTable
   11: optional TOlapTable olapTable
   12: optional TSchemaTable schemaTable
@@ -434,6 +432,8 @@ struct TTableDescriptor {
   22: optional TTrinoConnectorTable trinoConnectorTable
   23: optional TLakeSoulTable lakesoulTable
   24: optional TDictionaryTable dictionaryTable
+  25: optional string catalogName;  // 移动到序号 25
+  26: optional string user;         // 新增 user 字段使用序号 26
 }
 
 struct TDescriptorTable {
