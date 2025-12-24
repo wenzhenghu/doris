@@ -878,6 +878,14 @@ public class MetadataGenerator {
             }
 
             trow.addToColumnValue(new TCell().setStringVal(queryInfo.getSql()));
+
+            if (queryInfo.getCoord() != null) {
+                trow.addToColumnValue(new TCell().setLongVal(queryInfo.getCoord().getFragmentInstanceCount()));
+                trow.addToColumnValue(new TCell().setLongVal(queryInfo.getCoord().getFragmentInstanceFinishedCount()));
+            } else {
+                trow.addToColumnValue(new TCell().setLongVal(0));
+                trow.addToColumnValue(new TCell().setLongVal(0));
+            }
             dataBatch.add(trow);
         }
 

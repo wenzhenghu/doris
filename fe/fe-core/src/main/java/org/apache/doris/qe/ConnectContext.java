@@ -1243,6 +1243,13 @@ public class ConnectContext {
             } else {
                 row.add(cloudCluster);
             }
+            if (executor != null && executor.getCoord() != null) {
+                row.add(String.valueOf(executor.getCoord().getFragmentInstanceCount()));
+                row.add(String.valueOf(executor.getCoord().getFragmentInstanceFinishedCount()));
+            } else {
+                row.add("0");
+                row.add("0");
+            }
             return row;
         }
     }

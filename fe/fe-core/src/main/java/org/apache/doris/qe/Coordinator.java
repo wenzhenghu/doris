@@ -293,6 +293,24 @@ public class Coordinator implements CoordInterface {
     // fragmentid -> backendid
     private MarkedCountDownLatch<Integer, Long> fragmentsDoneLatch = null;
 
+    public long getFragmentInstanceCount() {
+        if (fragmentsDoneLatch != null) {
+            return fragmentsDoneLatch.getMarkCount();
+        } else if (instancesDoneLatch != null) {
+            return instancesDoneLatch.getMarkCount();
+        }
+        return 0;
+    }
+
+    public long getFragmentInstanceFinishedCount() {
+        if (fragmentsDoneLatch != null) {
+            return fragmentsDoneLatch.getMarkCount() - fragmentsDoneLatch.getCount();
+        } else if (instancesDoneLatch != null) {
+            return instancesDoneLatch.getMarkCount() - instancesDoneLatch.getCount();
+        }
+        return 0;
+    }
+
     public void setGroupCommitBe(Backend backend) {
         this.groupCommitBackend = backend;
     }
