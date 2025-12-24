@@ -47,7 +47,9 @@ std::vector<SchemaScanner::ColumnDesc> SchemaProcessListScanner::_s_processlist_
         {"TraceId", TYPE_VARCHAR, sizeof(StringRef), false},                // 11
         {"Info", TYPE_VARCHAR, sizeof(StringRef), false},                   // 12
         {"FE", TYPE_VARCHAR, sizeof(StringRef), false},                     // 13
-        {"CloudCluster", TYPE_VARCHAR, sizeof(StringRef), false}};          // 14
+        {"CloudCluster", TYPE_VARCHAR, sizeof(StringRef), false},           // 14
+        {"TotalFragment", TYPE_BIGINT, sizeof(int64_t), false},             // 15
+        {"FinishedFragment", TYPE_BIGINT, sizeof(int64_t), false}};         // 16
 
 SchemaProcessListScanner::SchemaProcessListScanner()
         : SchemaScanner(_s_processlist_columns, TSchemaTableType::SCH_PROCESSLIST) {}
@@ -70,6 +72,11 @@ Status SchemaProcessListScanner::start(RuntimeState* state) {
             if (row.size() == 14) {
                 // Insert an empty string at position 11 (index 11) for the TRACE_ID column
                 row.insert(row.begin() + 11, "");
+            }
+
+            if (row.size() == 15) {
+                row.emplace_back("0");
+                row.emplace_back("0");
             }
         }
 
@@ -127,6 +134,7 @@ Status SchemaProcessListScanner::_fill_block_impl(vectorized::Block* block) {
             column_value = row[col_idx];
 
             if (_s_processlist_columns[col_idx].type == TYPE_LARGEINT ||
+                _s_processlist_columns[col_idx].type == TYPE_BIGINT ||
                 _s_processlist_columns[col_idx].type == TYPE_INT) {
                 try {
                     int128_t val = !column_value.empty() ? std::stoll(column_value) : 0;
