@@ -374,6 +374,27 @@ public class NereidsCoordinator extends Coordinator {
     }
 
     @Override
+    public long getFragmentInstanceCount() {
+        return coordinatorContext.instanceNum.get();
+    }
+
+    @Override
+    public long getFragmentInstanceFinishedCount() {
+        if (executionTask == null) {
+            return 0;
+        }
+        long finishedInstances = 0;
+        for (MultiFragmentsPipelineTask multiTask : executionTask.getChildrenTasks().values()) {
+            for (SingleFragmentPipelineTask singleTask : multiTask.getChildrenTasks().values()) {
+                if (singleTask.isDone()) {
+                    finishedInstances += singleTask.getInstanceNum();
+                }
+            }
+        }
+        return finishedInstances;
+    }
+
+    @Override
     public List<PlanFragment> getFragments() {
         return coordinatorContext.fragments;
     }
