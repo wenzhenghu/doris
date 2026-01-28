@@ -87,7 +87,7 @@ private:
 public:
     // value_type is decimal32/64/128/256 type
     using value_type = typename PrimitiveTypeTraits<T>::CppType;
-    using CppNativeType = typename PrimitiveTypeTraits<T>::CppNativeType;
+    using CppNativeType = value_type::NativeType;
     using Container = DecimalPaddedPODArray<value_type>;
 
 private:
@@ -220,6 +220,18 @@ public:
         DCHECK(size() > self_row);
         data[self_row] = assert_cast<const Self&, TypeCheckOnRelease::DISABLE>(rhs).data[row];
     }
+
+    // Optimized batch version using memcpy for continuous range
+    void replace_column_data_range(const IColumn& src, size_t src_start, size_t count,
+                                   size_t self_start) override {
+        DCHECK(size() >= self_start + count);
+        const auto& src_col = assert_cast<const Self&, TypeCheckOnRelease::DISABLE>(src);
+        DCHECK(src_col.size() >= src_start + count);
+        memcpy(data.data() + self_start, src_col.data.data() + src_start,
+               count * sizeof(value_type));
+    }
+
+    bool support_replace_column_data_range() const override { return true; }
 
     void replace_column_null_data(const uint8_t* __restrict null_map) override;
 

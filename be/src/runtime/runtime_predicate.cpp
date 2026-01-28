@@ -67,8 +67,10 @@ Status RuntimePredicate::init_target(
         _contexts[target_node_id].col_name =
                 slot_id_to_slot_desc[get_texpr(target_node_id).nodes[0].slot_ref.slot_id]
                         ->col_name();
-        _contexts[target_node_id].predicate =
-                SharedPredicate::create_shared(cast_set<uint32_t>(column_id), "");
+        _contexts[target_node_id].col_data_type =
+                slot_id_to_slot_desc[get_texpr(target_node_id).nodes[0].slot_ref.slot_id]->type();
+        _contexts[target_node_id].predicate = SharedPredicate::create_shared(
+                cast_set<uint32_t>(column_id), _contexts[target_node_id].col_name);
     }
     _detected_target = true;
     return Status::OK();
@@ -165,7 +167,6 @@ StringRef RuntimePredicate::_get_string_ref(const Field& field, const PrimitiveT
         return StringRef((char*)&v, sizeof(v));
     }
     case doris::PrimitiveType::TYPE_VARBINARY: {
-        // For VARBINARY type, use StringViewField to store binary data
         const auto& v = field.get<TYPE_VARBINARY>();
         auto length = v.size();
         char* buffer = _predicate_arena.alloc(length);
@@ -212,13 +213,9 @@ Status RuntimePredicate::update(const Field& value) {
     }
     for (auto p : _contexts) {
         auto ctx = p.second;
-        if (!ctx.tablet_schema) {
-            continue;
-        }
-        const auto& column = *DORIS_TRY(ctx.tablet_schema->column(ctx.col_name));
         auto str_ref = _get_string_ref(_orderby_extrem, _type);
         std::shared_ptr<ColumnPredicate> pred =
-                _pred_constructor(ctx.predicate->column_id(), column.name(), column.get_vec_type(),
+                _pred_constructor(ctx.predicate->column_id(), ctx.col_name, ctx.col_data_type,
                                   str_ref, false, _predicate_arena);
 
         // For NULLS FIRST, wrap a AcceptNullPredicate to return true for NULL

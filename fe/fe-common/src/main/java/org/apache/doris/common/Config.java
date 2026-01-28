@@ -1816,7 +1816,7 @@ public class Config extends ConfigBase {
             "内部表的默认压缩类型。支持的值有：LZ4, LZ4F, LZ4HC, ZLIB, ZSTD, SNAPPY, NONE。",
             "Default compression type for internal tables. Supported values: LZ4, LZ4F, LZ4HC, ZLIB, ZSTD,"
             + " SNAPPY, NONE."})
-    public static String default_compression_type = "LZ4F";
+    public static String default_compression_type = "ZSTD";
 
     /*
      * The job scheduling interval of the schema change handler.
@@ -3761,6 +3761,14 @@ public class Config extends ConfigBase {
     @ConfField(mutable = true)
     public static long cloud_auto_snapshot_min_interval_seconds = 3600;
 
+    @ConfField(mutable = true, description = {
+            "cluster snapshot 相关操作的最低权限要求。可选值：'root'（仅 root 用户可执行）或 'admin'（ADMIN 权限用户可执行）。默认值为 'root'。",
+            "The minimum privilege required for cluster snapshot operations. "
+                    + "Valid values: 'root' (only root user can execute)"
+                    + " or 'admin' (users with ADMIN privilege can execute). "
+                    + "Default is 'root'."})
+    public static String cluster_snapshot_min_privilege = "root";
+
     @ConfField(mutable = true)
     public static long multi_part_upload_part_size_in_bytes = 256 * 1024 * 1024L; // 256MB
     @ConfField(mutable = true)
@@ -3771,6 +3779,12 @@ public class Config extends ConfigBase {
     @ConfField(mutable = true)
     public static String aws_credentials_provider_version = "v2";
 
+    @ConfField(mutable = true, description = {
+        "用户的单个查询能使用的 FILE_CACHE 比例的软上限（取值范围 1 到 100），100表示能够使用全量 FILE_CACHE",
+        "The soft upper limit of FILE_CACHE percent that a single query of a user can use, (range: 1 to 100).",
+        "100 indicate that the full FILE_CACHE capacity can be used. "
+    })
+    public static int file_cache_query_limit_max_percent = 100;
     @ConfField(description = {
             "AWS SDK 用于调度异步重试、超时任务以及其他后台操作的线程池大小，全局共享",
             "The thread pool size used by the AWS SDK to schedule asynchronous retries, timeout tasks, "
